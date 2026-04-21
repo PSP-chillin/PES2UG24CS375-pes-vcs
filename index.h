@@ -19,7 +19,7 @@ typedef struct {
     char path[512];         // Relative path from repo root (e.g., "src/main.c")
 } IndexEntry;
 
-typedef struct {
+typedef struct index {
     IndexEntry entries[MAX_INDEX_ENTRIES];
     int count;
 } Index;
