@@ -134,11 +134,23 @@ int index_status(const Index *index) {
 //   - hex_to_hash                      : converting the parsed string to ObjectID
 //
 // Returns 0 on success, -1 on error.
-int index_load(Index *index) {
-    // TODO: Implement index loading
-    // (See Lab Appendix for logical steps)
-    (void)index;
-    return -1;
+int index_load(Index *index)
+{
+    FILE *f = fopen(".pes/index", "r");
+    index->count = 0;
+    if (!f)
+        return 0;
+
+    char path[256];
+    while (fgets(path, sizeof(path), f))
+    {
+        path[strcspn(path, "\n")] = 0;
+        strcpy(index->entries[index->count].path, path);
+        index->count++;
+    }
+
+    fclose(f);
+    return 0;
 }
 
 // Save the index to .pes/index atomically.
@@ -151,11 +163,19 @@ int index_load(Index *index) {
 //   - rename                           : atomically moving the temp file over the old index
 //
 // Returns 0 on success, -1 on error.
-int index_save(const Index *index) {
-    // TODO: Implement atomic index saving
-    // (See Lab Appendix for logical steps)
-    (void)index;
-    return -1;
+int index_save(const Index *index)
+{
+    FILE *f = fopen(".pes/index", "w");
+    if (!f)
+        return -1;
+
+    for (int i = 0; i < index->count; i++)
+    {
+        fprintf(f, "%s\n", index->entries[i].path);
+    }
+
+    fclose(f);
+    return 0;
 }
 
 // Stage a file for the next commit.
@@ -167,9 +187,15 @@ int index_save(const Index *index) {
 //   - index_find                       : checking if the file is already staged
 //
 // Returns 0 on success, -1 on error.
-int index_add(Index *index, const char *path) {
-    // TODO: Implement file staging
-    // (See Lab Appendix for logical steps)
-    (void)index; (void)path;
-    return -1;
+int index_add(Index *index, const char *path)
+{
+    if (index_find(index, path))
+    {
+        printf("Already added: %s\n", path);
+        return 0;
+    }
+
+    strcpy(index->entries[index->count].path, path);
+    index->count++;
+    return index_save(index);
 }
