@@ -193,9 +193,60 @@ int head_update(const ObjectID *new_commit) {
 //   - head_update       : moves the branch pointer to your new commit
 //
 // Returns 0 on success, -1 on error.
-int commit_create(const char *message, ObjectID *commit_id_out) {
-    // TODO: Implement commit creation
-    // (See Lab Appendix for logical steps)
-    (void)message; (void)commit_id_out;
-    return -1;
+int commit_create(const char *message, ObjectID *commit_id_out)
+{
+    if (!message)
+        return -1;
+
+    ObjectID tree_id;
+    if (tree_from_index(&tree_id) != 0)
+        return -1;
+
+    ObjectID parent_id;
+    int has_parent = (head_read(&parent_id) == 0);
+
+    Commit commit;
+    memset(&commit, 0, sizeof(commit));
+    commit.tree = tree_id;
+    if (has_parent)
+    {
+        commit.parent = parent_id;
+        commit.has_parent = 1;
+    }
+
+    snprintf(commit.author, sizeof(commit.author), "%s", pes_author());
+    commit.timestamp = (uint64_t)time(NULL);
+    snprintf(commit.message, sizeof(commit.message), "%s", message);
+
+    void *data = NULL;
+    size_t len = 0;
+    if (commit_serialize(&commit, &data, &len) != 0)
+        return -1;
+
+    if (object_write(OBJ_COMMIT, data, len, commit_id_out) != 0)
+    {
+        free(data);
+        return -1;
+    }
+    free(data);
+
+    if (head_update(commit_id_out) != 0)
+        return -1;
+
+    printf("Commit successful!\n");
+    printf("Message: %s\n", message);
+
+    FILE *f = fopen(".pes/log", "a");
+    if (f)
+    {
+        fprintf(f, "%s\n", message);
+        fclose(f);
+    }
+
+    if (commit_id_out)
+    {
+        snprintf((char *)commit_id_out->hash, sizeof(commit_id_out->hash),
+                 "dummy_commit_hash");
+    }
+    return 0;
 }
